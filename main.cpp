@@ -36,11 +36,11 @@ template <ll a, ll b> struct Gcd < a, b, std::enable_if_t<a<0 && (b > 0)>> {
   static constexpr auto value = -Gcd<-a, b>::value;
 };
 
-template <ll a, ll b> struct Gcd < a, b, std::enable_if_t<a >= 0 && (b<0)>> {
+template <ll a, ll b> struct Gcd<a, b, std::enable_if_t<a >= 0 && (b < 0)>> {
   static constexpr auto value = -Gcd<a, -b>::value;
 };
 
-template <ll a, ll b> struct Gcd < a, b, std::enable_if_t < a<0 && (b<0)>> {
+template <ll a, ll b> struct Gcd < a, b, std::enable_if_t<a<0 && (b < 0)>> {
   static constexpr auto value = Gcd<a, -b>::value;
 };
 
@@ -70,14 +70,14 @@ template <typename R, typename I> struct to_complex<Complex<R, I>> {
 
 // addition
 
-template<typename, typename> struct stupid_add;
-template<ll n1, ll d1, ll n2, ll d2>
+template <typename, typename> struct stupid_add;
+template <ll n1, ll d1, ll n2, ll d2>
 struct stupid_add<Rational<n1, d1>, Rational<n2, d2>> {
   using type = simplify_t<Rational<n1 * d2 + d1 * n2, d1 * d2>>;
 };
 
 template <typename, typename> struct Add;
-template<typename V1, typename V2> using add_t = typename Add<V1, V2>::type;
+template <typename V1, typename V2> using add_t = typename Add<V1, V2>::type;
 
 template <ll n1, ll d1, ll n2, ll d2>
 struct Add<Rational<n1, d1>, Rational<n2, d2>> {
@@ -98,7 +98,7 @@ template <typename V1, typename V2> struct Add {
 
 // multiplication
 
-template<typename, typename> struct stupid_mult;
+template <typename, typename> struct stupid_mult;
 template <ll n1, ll d1, ll n2, ll d2>
 struct stupid_mult<Rational<n1, d1>, Rational<n2, d2>> {
   using type = simplify_t<Rational<n1 * n2, d1 * d2>>;
@@ -109,12 +109,10 @@ template <typename V1, typename V2> using mult_t = typename Mult<V1, V2>::type;
 
 template <ll n1, ll d1, ll n2, ll d2>
 struct Mult<Rational<n1, d1>, Rational<n2, d2>> {
-  using type = typename 
-    std::conditional_t<
+  using type = typename std::conditional_t<
       is_thresh<Rational<n1, d1>>::value && is_thresh<Rational<n2, d2>>::value,
       stupid_mult<Rational<n1, d1>, Rational<n2, d2>>,
-      Mult<threshold_t<Rational<n1, d1>>, threshold_t<Rational<n2, d2>>>
-    >::type;
+      Mult<threshold_t<Rational<n1, d1>>, threshold_t<Rational<n2, d2>>>>::type;
 };
 
 template <typename R1, typename I1, typename R2, typename I2>
@@ -179,7 +177,8 @@ struct evaluate_polynomial<Polynomial<C0, Cr...>, V> {
 };
 
 template <typename, ll> struct derivative;
-template <typename P> using derivative_t = typename derivative<P, degree<P>::value>::type;
+template <typename P>
+using derivative_t = typename derivative<P, degree<P>::value>::type;
 
 template <ll N> struct derivative<Polynomial<>, N> {
   using type = Polynomial<>;
@@ -199,12 +198,8 @@ struct derivative<Polynomial<C0, Cp...>, N> {
   using type = typename std::conditional_t<
       degree<Polynomial<C0, Cp...>>::value == N,
       derivative<Polynomial<Cp...>, N>,
-      smash<
-        mult_t<C0, 
-          Rational<N - degree<Polynomial<Cp...>>::value - 1>
-        >,
-        typename derivative<Polynomial<Cp...>, N>::type
-      >>::type;
+      smash<mult_t<C0, Rational<N - degree<Polynomial<Cp...>>::value - 1>>,
+            typename derivative<Polynomial<Cp...>, N>::type>>::type;
 };
 
 // newton map
@@ -227,12 +222,10 @@ template <typename, size_t, typename> struct iterate;
 template <typename Map, size_t N, typename V>
 using iterate_t = typename iterate<Map, N, V>::type;
 
-template <typename Map, typename V> struct iterate<Map, 0, V> {
-  using type = V;
-};
-
 template <typename Map, size_t N, typename V> struct iterate {
-  using type = iterate_t<Map, N - 1, typename Map::template evaluate_t<V>>;
+  using type = typename std::conditional_t<
+      N == 0, std::type_identity<V>,
+      iterate<Map, N - 1, typename Map::template evaluate_t<V>>>::type;
 };
 
 // utils
